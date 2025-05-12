@@ -1,0 +1,5 @@
+patchcore_cache/
+*.pth
+__pycache__/
+**/__pycache__/
+datasets/

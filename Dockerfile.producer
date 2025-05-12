@@ -1,0 +1,5 @@
+FROM python:3.10-slim
+WORKDIR /app
+RUN pip install kafka-python pillow tqdm
+COPY producer.py .
+CMD ["python", "producer.py", "--folder", "datasets/bottle/test/good", "--delay", "0.5"]

@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on: [zookeeper]
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: patchcore_api
+    environment:
+      CUDA_VISIBLE_DEVICES: ""        # GPU off, mettre "0" si Nvidia & nvidia‑container‑runtime
+    depends_on: [kafka]
+    ports: ["8000:8000"]
+    volumes:
+      - ./patchcore_cache:/app/patchcore_cache
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: patchcore_dashboard
+    depends_on: [api]
+    ports: ["8501:8501"]
+    volumes:
+      - ./patchcore_cache:/app/patchcore_cache
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    depends_on: [kafka]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: patchcore_images
+    restart: on-failure
